@@ -170,4 +170,33 @@ const getGroupDetails = async (req, res) => {
     }
 }
 
-module.exports = {createGroup, addTeamMember, removeTeamMember, getGroupDetails}
+const changeTitle = async (req, res) => {
+    const {course_code, user_email, title} = req.body
+
+    if(!user_email || !title || !course_code){
+        return res.status(400).json({error: 'Missing required fields'})
+    }
+
+    try{
+        const subject = await Subject.findOne({ course_code: course_code });
+
+        if (!subject) {
+            return res.status(404).json({ error: 'Subject not found' });
+        }
+
+        const group = subject.groups.find(group => group.members.some(member => member.email === user_email));
+
+        if (!group) {
+            return res.status(404).json({ error: 'Group not found' });
+        }
+
+        group.title = title;
+        await subject.save();
+        res.status(200).json({message: 'Title changed successfully'});
+    }catch(error){
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Failed to change the title' });
+    }
+}
+
+module.exports = {createGroup, addTeamMember, removeTeamMember, getGroupDetails, changeTitle}

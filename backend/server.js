@@ -9,18 +9,19 @@ const groupRoute = require('./routes/groupRoute')
 
 const app = express();
 
-app.use(express.json());
-app.use(morgan("dev"));
+app.use(express.json());    // Middleware to parse JSON bodies
+app.use(morgan("dev"));     // Middleware to log HTTP requests to the console
 
 mongoose.connect("mongodb://localhost:27017/LOCALDB", {})     // connect("mongodb://localhost:27017/LOCALDB", {})
-    .then(()=>{
-        app.listen(process.env.PORT,()=>{
-            console.log('Connected to MongoDB');
-            console.log(`Listening to port ${process.env.PORT}`)
-        })
+.then(()=>{
+    app.listen(process.env.PORT,()=>{
+        console.log('Connected to MongoDB');
+        console.log(`Listening to port ${process.env.PORT}`)
     })
-    .catch((error)=>{console.log(error)});
+})
+.catch((error)=>{console.log(error)});
 
+// mounting route middlewares 
 app.use('/api/group/',groupRoute)
 
 process.env
