@@ -24,7 +24,7 @@ mongoose.connect("mongodb://localhost:27017/LOCALDB", {})     // connect("mongod
 
 // mounting route middlewares 
 app.use('/api/group/',groupRoute)
-app.use('api/subject/',subjectRoute)
+app.use('/api/subject/',subjectRoute)
 
 process.env
 
