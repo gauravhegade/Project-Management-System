@@ -7,6 +7,7 @@ const morgan = require('morgan');
 //importing routes
 const groupRoute = require('./routes/groupRoute')
 const subjectRoute = require('./routes/subjectRoute')
+const uploadRoute = require('./routes/uploadRoute')
 
 const app = express();
 
@@ -25,6 +26,7 @@ mongoose.connect("mongodb://localhost:27017/LOCALDB", {})     // connect("mongod
 // mounting route middlewares 
 app.use('/api/group/',groupRoute)
 app.use('/api/subject/',subjectRoute)
+app.use('/api/files/',uploadRoute)
 
 process.env
 

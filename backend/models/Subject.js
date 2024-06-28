@@ -1,3 +1,4 @@
+const Phase = require('./Phase')
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
@@ -21,18 +22,6 @@ const memberSchema = new Schema({
     }
 },{timestamps: true})
 
-const fileSchema = new Schema({
-    file_name: { type: String, required: true },
-    file_path: { type: String, required: true },
-    uploadedAt: { type: Date, default: Date.now }
-},{timestamps: true});
-
-const phaseSchema = new Schema({
-    phase_name: { type: String, required: true },
-    phase_no,
-    files: [fileSchema]
-},{timestamps: true});
-
 const groupSchema = new Schema({
     group_no: { 
         type: Number, 
@@ -52,7 +41,7 @@ const groupSchema = new Schema({
         default: " " 
     },
     members: [memberSchema],
-    phases: [phaseSchema]
+    phases: [Phase.schema]
 },{timestamps: true})
 
 const subjectSchema = new Schema({
@@ -82,6 +71,7 @@ const subjectSchema = new Schema({
     groups:[groupSchema]
 },{timestamps: true})
 
-const Subject = mongoose.model('Subject',subjectSchema)
+const Subject = mongoose.model('Subject',subjectSchema);
+const Group = mongoose.model('Group', groupSchema);
 
-module.exports = Subject
+module.exports = { Subject, Group }

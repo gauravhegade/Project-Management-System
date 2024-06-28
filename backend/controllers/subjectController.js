@@ -1,4 +1,4 @@
-const Subject = require('../models/Groups')
+const Subject = require('../models/Subject')
 
 const createSubject = async (req, res) => {
     const {
