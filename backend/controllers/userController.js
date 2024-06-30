@@ -1,8 +1,24 @@
 const { Student, Faculty } = require('../models/User');
+const jwt = require('jsonwebtoken');
+
+const createToken = (_id) => {
+  return jwt.sign({ _id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
 
 // login student
 const loginStudent = async (req, res) => {
-  res.json({ msg: `Login Student` });
+  const { email, password } = req.body;
+
+  try {
+    const student = await Student.login(email, password);
+
+    // create a token
+    const token = createToken(student._id);
+
+    res.status(200).json({ email, token });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 };
 
 // signup student
@@ -12,7 +28,11 @@ const signupStudent = async (req, res) => {
 
   try {
     const student = await Student.signup(email, password);
-    res.status(200).json({ email, student });
+
+    // create a token
+    const token = createToken(student._id);
+
+    res.status(200).json({ email, token });
   } catch (error) {
     // catch the error we're throwing in the model
     res.status(400).json({ error: error.message });
@@ -21,7 +41,20 @@ const signupStudent = async (req, res) => {
 
 // login faculty
 const loginFaculty = async (req, res) => {
-  res.json({ msg: `Login Faculty` });
+  // destructuring the request object
+  const { email, password } = req.body;
+
+  try {
+    const faculty = await Faculty.login(email, password);
+
+    // create a token
+    const token = createToken(faculty._id);
+
+    res.status(200).json({ email, token });
+  } catch (error) {
+    // catch the error we're throwing in the model
+    res.status(400).json({ error: error.message });
+  }
 };
 
 // signup faculty
@@ -31,7 +64,11 @@ const signupFaculty = async (req, res) => {
 
   try {
     const faculty = await Faculty.signup(email, password);
-    res.status(200).json({ email, faculty });
+
+    // create a token
+    const token = createToken(faculty._id);
+
+    res.status(200).json({ email, token });
   } catch (error) {
     // catch the error we're throwing in the model
     res.status(400).json({ error: error.message });

@@ -118,6 +118,47 @@ facultySchema.statics.signup = async (email, password) => {
   return faculty;
 };
 
+// static login method
+studentSchema.statics.login = async (email, password) => {
+  if (!email || !password) {
+    throw Error('All fields are required!');
+  }
+
+  const student = await Student.findOne({ email });
+
+  if (!student) {
+    throw Error('Incorrect email!');
+  }
+
+  const match = await bcrypt.compare(password, student.password);
+
+  if (!match) {
+    throw Error('Incorrect password!');
+  }
+
+  return student;
+};
+
+facultySchema.statics.login = async (email, password) => {
+  if (!email || !password) {
+    throw Error('All fields are required!');
+  }
+
+  const faculty = await Faculty.findOne({ email });
+
+  if (!faculty) {
+    throw Error('Incorrect email!');
+  }
+
+  const match = await bcrypt.compare(password, faculty.password);
+
+  if (!match) {
+    throw Error('Incorrect password!');
+  }
+
+  return faculty;
+};
+
 const Student = mongoose.model('Student', studentSchema);
 const Faculty = mongoose.model('Faculty', facultySchema);
 
