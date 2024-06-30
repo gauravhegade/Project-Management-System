@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { Student, Faculty } = require('../models/User');
 
 // login student
 const loginStudent = async (req, res) => {
@@ -11,8 +11,8 @@ const signupStudent = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.signup(email, password);
-    res.status(200).json({ email, user });
+    const student = await Student.signup(email, password);
+    res.status(200).json({ email, student });
   } catch (error) {
     // catch the error we're throwing in the model
     res.status(400).json({ error: error.message });
@@ -30,8 +30,8 @@ const signupFaculty = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.signup(email, password);
-    res.status(200).json({ email, user });
+    const faculty = await Faculty.signup(email, password);
+    res.status(200).json({ email, faculty });
   } catch (error) {
     // catch the error we're throwing in the model
     res.status(400).json({ error: error.message });
