@@ -4,16 +4,20 @@ const express = require('express');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
 
+
 //importing routes
 const groupRoute = require('./routes/groupRoute')
 const subjectRoute = require('./routes/subjectRoute')
+
 
 const app = express();
 
 app.use(express.json());    // Middleware to parse JSON bodies
 app.use(morgan("dev"));     // Middleware to log HTTP requests to the console
 
-mongoose.connect("mongodb://localhost:27017/LOCALDB", {})     // connect("mongodb://localhost:27017/LOCALDB", {})
+
+
+mongoose.connect("mongodb://127.0.0.1:27017/LOCALDB")     // connect("mongodb://localhost:27017/LOCALDB", {})
 .then(()=>{
     app.listen(process.env.PORT,()=>{
         console.log('Connected to MongoDB');

@@ -1,4 +1,5 @@
 const Subject = require('../models/Groups')
+const axios = require('axios');
 
 const getGroupCount = async (course_code) => {
     try {
@@ -12,18 +13,26 @@ const getGroupCount = async (course_code) => {
         throw new Error('Failed to fetch group count');
     }
 };
-
 const createGroup = async (req, res) => {
-    const course_code = req.body.course_code
-    const title = req.body.title
-    const members = req.body.members
-    const project_description = req.body.project_description;
+    const { course_code, title, members, project_description } = req.body;
 
-    if (!course_code || !title || !Array.isArray(members)) {
-        return res.status(400).json({ error: 'Missing required fields' });
+    // Initial validation
+    if (!course_code) {
+        console.log("Missing course_code");
+        return res.status(400).json({ error: 'Missing course_code' });
+    }
+    if (!title) {
+        console.log("Missing title");
+        return res.status(400).json({ error: 'Missing title' });
+    }
+    if (!Array.isArray(members)) {
+        console.log("Members is not an array or missing");
+        return res.status(400).json({ error: 'Missing or invalid members' });
     }
 
-    if (!Array.isArray(members) || !members.every(member => member.email && member.name && member.usn)) {
+    // Detailed validation for members
+    if (!members.every(member => member.email && member.name && member.usn)) {
+        console.log("Invalid member info", members);
         return res.status(400).json({ error: 'Invalid member info' });
     }
 
@@ -31,7 +40,7 @@ const createGroup = async (req, res) => {
         title: title,
         members: members
     };
-    if(project_description){
+    if (project_description) {
         group_info.project_description = project_description;
     }
 
@@ -39,18 +48,21 @@ const createGroup = async (req, res) => {
         const group_count = await getGroupCount(course_code);
         group_info.group_no = group_count + 1;
 
-        const subject = await Subject.findOne({ course_code: course_code })
+        const subject = await Subject.findOne({ course_code: course_code });
         if (!subject) {
+            console.log("Subject not found for course_code:", course_code);
             return res.status(404).json({ error: 'Subject not found' });
         }
 
-        if(!title || title.length<3 || title.length>80){
-            return res.status(400).json({error: 'Invalid title'});
+        if (title.length < 3 || title.length > 80) {
+            console.log("Invalid title length:", title.length);
+            return res.status(400).json({ error: 'Invalid title length' });
         }
 
-        const team_size = members.length
-        if(team_size>subject.max_team_size || team_size<subject.min_team_size){
-            return res.status(400).json({error: 'Invalid team size'});
+        const team_size = members.length;
+        if (team_size > subject.max_team_size || team_size < subject.min_team_size) {
+            console.log("Invalid team size:", team_size);
+            return res.status(400).json({ error: 'Invalid team size' });
         }
 
         subject.groups.push(group_info);
@@ -62,6 +74,7 @@ const createGroup = async (req, res) => {
         res.status(500).json({ error: 'Failed to create group.' });
     }
 }
+
 
 const addTeamMember = async (req, res) => {
     const { course_code, name, usn, email, user_email } = req.body;
@@ -199,4 +212,49 @@ const changeTitle = async (req, res) => {
     }
 }
 
-module.exports = {createGroup, addTeamMember, removeTeamMember, getGroupDetails, changeTitle}
+const threshold  = 0.7
+const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:5000';
+
+const checkTopic = async (req, res) => {
+    const { topic1, threshold = 0.7 } = req.body;
+
+    if (!topic1) {
+        return res.status(400).send({ error: 'Topic must be provided.' });
+    }
+
+    try {
+        // Find all subjects
+        const subjects = await Subject.find({});
+
+        const results = [];
+        // Iterate over each subject and its groups
+        for (const subject of subjects) {
+            for (const group of subject.groups) {
+                console.log(`Requesting similarity for: "${topic1}", "${group.title}"`);
+                const groupResponse = await axios.post(`${pythonServiceUrl}/similarity`, {
+                    topic1: topic1,
+                    topic2: group.title
+                });
+                console.log('Response from Python service:', groupResponse.data);
+                const groupSimilarity = groupResponse.data.similarity;
+                if (groupSimilarity >= threshold) {
+                    results.push({ groupNo: group.group_no, title: group.title, similarity: groupSimilarity });
+                }
+            }
+        }
+
+        res.send({ filteredTitles: results });
+    } catch (error) {
+        console.error('Error calculating similarity:', error.message);
+        if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+            console.error('Response headers:', error.response.headers);
+        }
+        res.status(500).send({ error: 'Error calculating similarity' });
+    }
+};
+
+
+
+module.exports = {createGroup, addTeamMember, removeTeamMember, getGroupDetails, changeTitle,checkTopic}
