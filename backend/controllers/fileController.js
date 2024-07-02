@@ -47,4 +47,30 @@ const uploadFile = async (req, res) => {
     }
 };
 
-module.exports = { uploadFile };
+const getListofFiles = async (req, res) => {
+    const { course_code, group_no, phase_no } = req.body;
+
+    try {
+        const subject = await Subject.findOne({ course_code });
+        if (!subject) {
+            return res.status(404).json({ error: "Subject not found" });
+        }
+
+        const group = subject.groups.find(group => group.group_no === group_no);
+        if (!group) {
+            return res.status(404).json({ error: "Group not found" });
+        }
+
+        const phase = group.phases.find(phase => phase.phase_no === phase_no);
+        if (!phase) {
+            return res.status(404).json({ error: "Phase not found" });
+        }
+
+        const fileNames = phase.files.map(file => file.file_name);
+        res.status(200).json(fileNames);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { uploadFile, getListofFiles };
