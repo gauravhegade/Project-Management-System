@@ -1,4 +1,4 @@
-const Subject = require('../models/Subject')
+const {Subject} = require('../models/Subject')
 
 const getGroupCount = async (course_code) => {
     try {
@@ -144,14 +144,15 @@ const removeTeamMember = async (req, res) => {
 }
 
 const getGroupDetails = async (req, res) => {
-    const { course_code, group_no } = req.body;
+    const course_code = req.query.course_code;
+    const group_no =  parseInt(req.query.group_no, 10); 
 
     if (!course_code || !group_no) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
-        const subject = await Subject.findOne({ course_code: course_code });
+        const subject = await Subject.findOne({ course_code });
 
         if (!subject) {
             return res.status(404).json({ error: 'Subject not found' });

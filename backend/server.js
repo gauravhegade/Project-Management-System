@@ -13,6 +13,7 @@ const app = express();
 
 app.use(express.json());    // Middleware to parse JSON bodies
 app.use(morgan("dev"));     // Middleware to log HTTP requests to the console
+app.use(express.urlencoded({ extended: true }));
 
 mongoose.connect("mongodb://localhost:27017/LOCALDB", {})     // connect("mongodb://localhost:27017/LOCALDB", {})
 .then(()=>{
