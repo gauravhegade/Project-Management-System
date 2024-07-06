@@ -72,4 +72,16 @@ const getListofFiles = async (req, res) => {
     }
 };
 
-module.exports = { uploadFile, getListofFiles };
+const deleteFile = async (req,res) =>{
+    const file_name = req.query.file_name;
+    if(!file_name){
+        return res.status(400).json({error: "Missing required field"})
+    }
+    try{
+        
+    }catch(err){
+        res.status(500).json({error: err.message})
+    }
+}
+
+module.exports = { uploadFile, getListofFiles, deleteFile };
