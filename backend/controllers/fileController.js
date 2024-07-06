@@ -6,7 +6,6 @@ const uploadFile = async (req, res) => {
         if (!files || files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded' });
         }
-        //console.log('Files received:', files);
         const { course_code, phase_name } = req.body;
         const group_no = parseInt(req.body.group_no, 10);
         const phase_no = parseInt(req.body.phase_no, 10);
