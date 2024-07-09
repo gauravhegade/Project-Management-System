@@ -1,4 +1,4 @@
-const Subject = require('../models/Groups')
+const { Subject } = require('../models/Subject');
 const axios = require('axios');
 
 const getGroupCount = async (course_code) => {
@@ -13,56 +13,57 @@ const getGroupCount = async (course_code) => {
     throw new Error('Failed to fetch group count');
   }
 };
+
 const createGroup = async (req, res) => {
   const { course_code, title, members, project_description } = req.body;
 
-    // Initial validation
-    if (!course_code) {
-        console.log("Missing course_code");
-        return res.status(400).json({ error: 'Missing course_code' });
-    }
-    if (!title) {
-        console.log("Missing title");
-        return res.status(400).json({ error: 'Missing title' });
-    }
-    if (!Array.isArray(members)) {
-        console.log("Members is not an array or missing");
-        return res.status(400).json({ error: 'Missing or invalid members' });
-    }
+  // Initial validation
+  if (!course_code) {
+    console.log('Missing course_code');
+    return res.status(400).json({ error: 'Missing course_code' });
+  }
+  if (!title) {
+    console.log('Missing title');
+    return res.status(400).json({ error: 'Missing title' });
+  }
+  if (!Array.isArray(members)) {
+    console.log('Members is not an array or missing');
+    return res.status(400).json({ error: 'Missing or invalid members' });
+  }
 
-    // Detailed validation for members
-    if (!members.every(member => member.email && member.name && member.usn)) {
-        console.log("Invalid member info", members);
-        return res.status(400).json({ error: 'Invalid member info' });
-    }
+  // Detailed validation for members
+  if (!members.every((member) => member.email && member.name && member.usn)) {
+    console.log('Invalid member info', members);
+    return res.status(400).json({ error: 'Invalid member info' });
+  }
 
-    const group_info = {
-        title: title,
-        members: members
-    };
-    if (project_description) {
-        group_info.project_description = project_description;
-    }
+  const group_info = {
+    title: title,
+    members: members,
+  };
+  if (project_description) {
+    group_info.project_description = project_description;
+  }
 
-    subject.groups.push(group_info);
-    await subject.save();
+  subject.groups.push(group_info);
+  await subject.save();
 
-    const subject = await Subject.findOne({ course_code: course_code });
-        if (!subject) {
-            console.log("Subject not found for course_code:", course_code);
-            return res.status(404).json({ error: 'Subject not found' });
-        }
+  const subject = await Subject.findOne({ course_code: course_code });
+  if (!subject) {
+    console.log('Subject not found for course_code:', course_code);
+    return res.status(404).json({ error: 'Subject not found' });
+  }
 
-        if (title.length < 3 || title.length > 80) {
-            console.log("Invalid title length:", title.length);
-            return res.status(400).json({ error: 'Invalid title length' });
-        }
+  if (title.length < 3 || title.length > 80) {
+    console.log('Invalid title length:', title.length);
+    return res.status(400).json({ error: 'Invalid title length' });
+  }
 
-        const team_size = members.length;
-        if (team_size > subject.max_team_size || team_size < subject.min_team_size) {
-            console.log("Invalid team size:", team_size);
-            return res.status(400).json({ error: 'Invalid team size' });
-        }
+  const team_size = members.length;
+  if (team_size > subject.max_team_size || team_size < subject.min_team_size) {
+    console.log('Invalid team size:', team_size);
+    return res.status(400).json({ error: 'Invalid team size' });
+  }
 
   try {
     const subject = await Subject.findOne({ course_code: course_code });
@@ -70,11 +71,15 @@ const createGroup = async (req, res) => {
     if (!subject) {
       return res.status(404).json({ error: 'Subject not found' });
     }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create group' });
+  }
+};
 
 const addTeamMember = async (req, res) => {
-    const { course_code, name, usn, email, user_email } = req.body;
+  const { course_code, name, usn, email, user_email } = req.body;
 
-
+  try {
     if (!group) {
       return res
         .status(404)
@@ -151,7 +156,8 @@ const removeTeamMember = async (req, res) => {
 };
 
 const getGroupDetails = async (req, res) => {
-  const { course_code, group_no } = req.body;
+  const course_code = req.query.course_code;
+  const group_no = parseInt(req.query.group_no, 10);
 
   if (!course_code || !group_no) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -208,49 +214,60 @@ const changeTitle = async (req, res) => {
   }
 };
 
-const threshold  = 0.7
-const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:5000';
+const pythonServiceUrl =
+  process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:5000';
 
 const checkTopic = async (req, res) => {
-    const { topic1, threshold = 0.7 } = req.body;
+  const { topic1, threshold = 0.7 } = req.body;
 
-    if (!topic1) {
-        return res.status(400).send({ error: 'Topic must be provided.' });
+  if (!topic1) {
+    return res.status(400).send({ error: 'Topic must be provided.' });
+  }
+
+  try {
+    const subjects = await Subject.findOne({ course_code });
+
+    const results = [];
+    // Iterate over each subject and its groups
+    for (const subject of subjects) {
+      for (const group of subject.groups) {
+        console.log(`Requesting similarity for: "${topic1}", "${group.title}"`);
+        const groupResponse = await axios.post(
+          `${pythonServiceUrl}/similarity`,
+          {
+            topic1: topic1,
+            topic2: group.title,
+          }
+        );
+        console.log('Response from Python service:', groupResponse.data);
+        const groupSimilarity = groupResponse.data.similarity;
+        if (groupSimilarity >= threshold) {
+          results.push({
+            groupNo: group.group_no,
+            title: group.title,
+            similarity: groupSimilarity,
+          });
+        }
+      }
     }
 
-    try {
-        // Find all subjects
-        const subjects = await Subject.find({});
-
-        const results = [];
-        // Iterate over each subject and its groups
-        for (const subject of subjects) {
-            for (const group of subject.groups) {
-                console.log(`Requesting similarity for: "${topic1}", "${group.title}"`);
-                const groupResponse = await axios.post(`${pythonServiceUrl}/similarity`, {
-                    topic1: topic1,
-                    topic2: group.title
-                });
-                console.log('Response from Python service:', groupResponse.data);
-                const groupSimilarity = groupResponse.data.similarity;
-                if (groupSimilarity >= threshold) {
-                    results.push({ groupNo: group.group_no, title: group.title, similarity: groupSimilarity });
-                }
-            }
-        }
-
-        res.send({ filteredTitles: results });
-    } catch (error) {
-        console.error('Error calculating similarity:', error.message);
-        if (error.response) {
-            console.error('Response data:', error.response.data);
-            console.error('Response status:', error.response.status);
-            console.error('Response headers:', error.response.headers);
-        }
-        res.status(500).send({ error: 'Error calculating similarity' });
+    res.send({ filteredTitles: results });
+  } catch (error) {
+    console.error('Error calculating similarity:', error.message);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
     }
+    res.status(500).send({ error: 'Error calculating similarity' });
+  }
 };
 
-
-
-module.exports = {createGroup, addTeamMember, removeTeamMember, getGroupDetails, changeTitle,checkTopic}
+module.exports = {
+  createGroup,
+  addTeamMember,
+  removeTeamMember,
+  getGroupDetails,
+  changeTitle,
+  checkTopic,
+};

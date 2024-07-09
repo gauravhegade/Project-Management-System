@@ -21,6 +21,24 @@ const memberSchema = new Schema({
   },
 });
 
+const fileSchema = new Schema(
+  {
+    file_name: { type: String, required: true },
+    file_path: { type: String, required: true },
+    uploadedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
+
+const phaseSchema = new Schema(
+  {
+    phase_name: { type: String, required: true },
+    phase_no: { type: Number, required: true },
+    files: [fileSchema],
+  },
+  { timestamps: true }
+);
+
 const groupSchema = new Schema(
   {
     group_no: {
@@ -41,6 +59,7 @@ const groupSchema = new Schema(
       default: ' ',
     },
     members: [memberSchema],
+    phases: [phaseSchema],
   },
   { timestamps: true }
 );
@@ -76,5 +95,7 @@ const subjectSchema = new Schema(
 );
 
 const Subject = mongoose.model('Subject', subjectSchema);
+const Group = mongoose.model('Group', groupSchema);
+const Phase = mongoose.model('Phase', phaseSchema);
 
-module.exports = Subject;
+module.exports = { Subject, Group, Phase };

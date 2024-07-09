@@ -1,4 +1,4 @@
-const Subject = require('../models/Groups');
+const { Subject, Group, Phase } = require('../models/Subject');
 
 const createSubject = async (req, res) => {
   const {
@@ -109,12 +109,10 @@ const modifySubject = async (req, res) => {
       return res.status(404).json({ error: 'Subject does not exist' });
     }
 
-    return res
-      .status(200)
-      .json({
-        message: 'Subject updated successfully',
-        subject: updatedSubject,
-      });
+    return res.status(200).json({
+      message: 'Subject updated successfully',
+      subject: updatedSubject,
+    });
   } catch (error) {
     console.log('error: ', error);
     return res.status(500).json({ error: 'Failed to update subject' });
