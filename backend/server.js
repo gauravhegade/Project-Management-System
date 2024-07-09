@@ -7,6 +7,7 @@ const morgan = require('morgan');
 //importing routes
 const groupRoute = require('./routes/groupRoute');
 const subjectRoute = require('./routes/subjectRoute');
+const userRoutes = require('./routes/userRoutes');
 const uploadRoute = require('./routes/uploadRoute');
 
 const app = express();
