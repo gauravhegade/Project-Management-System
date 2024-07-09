@@ -147,7 +147,5 @@ dist
 **/*.back.*
 
 node_modules
-package-lock.json 
-package.json
 .env
 uploads
