@@ -64,12 +64,25 @@ const groupSchema = new Schema(
   { timestamps: true }
 );
 
+const studentSchema = new Schema({
+  email: String,
+  usn: String,
+  name: String,
+  marks: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  }
+});
+
 const subjectSchema = new Schema(
   {
     course_name: String,
     course_code: String,
     faculty_incharge_name: String,
     faculty_incharge_email: String,
+    students:[studentSchema],
     max_team_size: {
       type: Number,
       max: 10,
