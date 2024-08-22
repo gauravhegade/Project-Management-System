@@ -239,5 +239,45 @@ const editStudentMarks = async (req, res) => {
   }
 };
 
+const updateStudentMarks = async (req, res) => {
+  const { faculty_email, course_code, students } = req.body;
 
-module.exports = { createSubject, getSubjectDetails, modifySubject, getListofSubjects, addStudents };
+  if (!faculty_email || !course_code || !Array.isArray(students)) {
+    return res.status(400).json({ error: 'Missing or invalid required fields' });
+  }
+
+  try {
+    const subject = await Subject.findOne({
+      course_code: course_code,
+      faculty_incharge_email: faculty_email
+    });
+
+    if (!subject) {
+      return res.status(404).json({ error: 'Subject not found or unauthorized access' });
+    }
+
+    students.forEach((studentInfo) => {
+      const { usn, marks } = studentInfo;
+
+      const student = subject.students.find((student) => student.usn === usn);
+
+      if (student) {
+        student.marks = marks;
+      } else {
+        console.log(`Student with USN ${usn} not found`);
+      }
+    });
+
+    await subject.save();
+
+    res.status(200).json({ message: 'Marks updated successfully' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to update marks' });
+  }
+};
+
+
+
+module.exports = { createSubject, getSubjectDetails, modifySubject, getListofSubjects, addStudents, 
+                    getListofStudents, editStudentMarks, updateStudentMarks };
