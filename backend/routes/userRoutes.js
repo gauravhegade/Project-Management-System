@@ -1,6 +1,4 @@
 const express = require('express');
-
-// controller functions
 const {
   signupStudent,
   loginStudent,
@@ -10,16 +8,11 @@ const {
 
 const router = express.Router();
 
-// login student route
-router.post('/student/login', loginStudent);
-
-// signup student route
+// Signup and login routes for students and faculty
 router.post('/student/signup', signupStudent);
-
-// login student route
-router.post('/faculty/login', loginFaculty);
-
-// signup student route
 router.post('/faculty/signup', signupFaculty);
+
+router.post('/student/login', loginStudent);
+router.post('/faculty/login', loginFaculty);
 
 module.exports = router;

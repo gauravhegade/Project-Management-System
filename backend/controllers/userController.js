@@ -1,10 +1,13 @@
 const { Student, Faculty } = require('../models/User');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const createToken = (_id) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined');
+  }
   return jwt.sign({ _id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
-
 // login student
 const loginStudent = async (req, res) => {
   const { email, password } = req.body;

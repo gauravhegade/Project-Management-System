@@ -119,4 +119,14 @@ const modifySubject = async (req, res) => {
   }
 };
 
-module.exports = { createSubject, getSubjectDetails, modifySubject };
+const getAllSubjectsForStudents = async (req, res) => {
+  try {
+    const subjects = await Subject.find().select('-groups');
+    return res.status(200).json(subjects);
+  } catch (error) {
+    console.log('error: ', error);
+    return res.status(500).json({ error: 'Failed to fetch subjects' });
+  }
+};
+
+module.exports = { createSubject, getSubjectDetails, modifySubject , getAllSubjectsForStudents};
