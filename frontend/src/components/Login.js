@@ -3,10 +3,6 @@ import { login } from '../api';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom'; 
 
-
- 
-
-
 const Login = () => {
   const navigate = useNavigate(); 
   const [email, setEmail] = useState('');
@@ -23,7 +19,10 @@ const Login = () => {
       }
       const userData = await login({ email, password }, role);
       loginUser(userData);
-      navigate('/dashboard');
+      if(role ===  "student")
+      navigate('/student-dashboard');
+      else 
+      navigate('/faculty-dashboard');
       setError('');  // Clear error if login is successful
     } catch (err) {
       console.error('Login error:', err); // Log the error to the console
