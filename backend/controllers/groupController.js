@@ -37,41 +37,48 @@ const createGroup = async (req, res) => {
     return res.status(400).json({ error: 'Invalid member info' });
   }
 
-  const group_info = {
-    title: title,
-    members: members,
-  };
-  if (project_description) {
-    group_info.project_description = project_description;
-  }
-
-  subject.groups.push(group_info);
-  await subject.save();
-
-  const subject = await Subject.findOne({ course_code: course_code });
-  if (!subject) {
-    console.log('Subject not found for course_code:', course_code);
-    return res.status(404).json({ error: 'Subject not found' });
-  }
-
-  if (title.length < 3 || title.length > 80) {
-    console.log('Invalid title length:', title.length);
-    return res.status(400).json({ error: 'Invalid title length' });
-  }
-
-  const team_size = members.length;
-  if (team_size > subject.max_team_size || team_size < subject.min_team_size) {
-    console.log('Invalid team size:', team_size);
-    return res.status(400).json({ error: 'Invalid team size' });
-  }
-
   try {
     const subject = await Subject.findOne({ course_code: course_code });
 
     if (!subject) {
+      console.log('Subject not found for course_code:', course_code);
       return res.status(404).json({ error: 'Subject not found' });
     }
+
+    // Check if all member emails are in the subject's student list
+    const studentEmails = subject.students.map(student => student.email);
+    const unauthorizedMembers = members.filter(member => !studentEmails.includes(member.email));
+
+    if (unauthorizedMembers.length > 0) {
+      console.log('Unauthorized members:', unauthorizedMembers);
+      return res.status(403).json({ error: 'You do not have access to create a group in this subject' });
+    }
+
+    if (title.length < 3 || title.length > 80) {
+      console.log('Invalid title length:', title.length);
+      return res.status(400).json({ error: 'Invalid title length' });
+    }
+
+    const team_size = members.length;
+    if (team_size > subject.max_team_size || team_size < subject.min_team_size) {
+      console.log('Invalid team size:', team_size);
+      return res.status(400).json({ error: 'Invalid team size' });
+    }
+
+    const group_info = {
+      title: title,
+      members: members,
+    };
+    if (project_description) {
+      group_info.project_description = project_description;
+    }
+
+    subject.groups.push(group_info);
+    await subject.save();
+
+    res.status(201).json({ message: 'Group created successfully' });
   } catch (error) {
+    console.log('Error creating group:', error);
     res.status(500).json({ error: 'Failed to create group' });
   }
 };
@@ -80,25 +87,37 @@ const addTeamMember = async (req, res) => {
   const { course_code, name, usn, email, user_email } = req.body;
 
   try {
+    // Find the subject by course_code
+    const subject = await Subject.findOne({ course_code: course_code });
+    if (!subject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+
+    // Find the group where the user_email is a member
+    const group = subject.groups.find((group) =>
+      group.members.some((member) => member.email === user_email)
+    );
+
     if (!group) {
       return res
         .status(404)
         .json({ error: 'Group not found for the specified user' });
     }
 
-    if (group.members.length === subject.max_team_size) {
+    // Check if the group is already full
+    if (group.members.length >= subject.max_team_size) {
       return res.status(400).json({ error: 'Group is already full' });
     }
 
-    const existingMember = group.members.find(
-      (member) => member.email === email
-    );
+    // Check if the member already exists in the group
+    const existingMember = group.members.find((member) => member.email === email);
     if (existingMember) {
       return res
         .status(400)
         .json({ error: 'Member with this email already exists in the group' });
     }
 
+    // Add the new member to the group
     group.members.push({ name, usn, email });
     await subject.save();
 
@@ -117,12 +136,14 @@ const removeTeamMember = async (req, res) => {
   }
 
   try {
+    // Find the subject by course_code
     const subject = await Subject.findOne({ course_code: course_code });
 
     if (!subject) {
       return res.status(404).json({ error: 'Subject not found' });
     }
 
+    // Find the group where the user_email is a member
     const group = subject.groups.find((group) =>
       group.members.some((member) => member.email === user_email)
     );
@@ -133,10 +154,12 @@ const removeTeamMember = async (req, res) => {
         .json({ error: 'Group not found for the specified user' });
     }
 
-    if (subject.min_team_size === group.members.length) {
-      return res.status(400).json({ error: 'Not enough members' });
+    // Check if the group has at least the minimum number of members after removal
+    if (group.members.length <= subject.min_team_size) {
+      return res.status(400).json({ error: 'Cannot remove member, group would be below minimum size' });
     }
 
+    // Find the member to be removed
     const memberIndex = group.members.findIndex(
       (member) => member.email === email
     );
@@ -145,6 +168,7 @@ const removeTeamMember = async (req, res) => {
       return res.status(404).json({ error: 'Member not found in the group' });
     }
 
+    // Remove the member
     group.members.splice(memberIndex, 1);
     await subject.save();
 
