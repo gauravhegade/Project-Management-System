@@ -104,7 +104,7 @@ const getListofFiles = async (req, res) => {
 
 const getFile = async (req, res) => {
     try {
-        const { user_email, course_code, group_no, phase_no, file_name } = req.body;
+        const { user_email, course_code, group_no, file_name } = req.body;
 
         const subject = await Subject.findOne({ course_code });
         if (!subject) {
@@ -124,22 +124,34 @@ const getFile = async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to access this file' });
         }
 
-        const phase = group.phases.find(p => p.phase_no === phase_no);
-        if (!phase) {
-            return res.status(404).json({ message: 'Phase not found' });
+        for (const phase of group.phases) {
+            const file = phase.files.find(f => f.file_name === file_name);
+            if (file) {
+                const filePath = path.resolve(__dirname,'..', file.file_path);
+                console.log(filePath);
+                if (fs.existsSync(filePath)) {
+                    res.sendFile(filePath, (err) => {
+                        if (err) {
+                            console.error('Error sending file:', err);
+                            res.status(500).json({ message: 'Failed to send file' });
+                        }
+                    });
+                } else {
+                    return res.status(404).json({ message: 'File not found on server' });
+                }
+
+                return; 
+            }
         }
 
-        const file = phase.files.find(f => f.file_name === file_name);
-        if (!file) {
-            return res.status(404).json({ message: 'File not found' });
-        }
+        return res.status(404).json({ message: 'File not found in any phase' });
 
-        return res.status(200).json({ file });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 
 const deleteFile = async (req, res) => {
     const { course_code, group_no, file_name, user_email } = req.body;
