@@ -56,7 +56,8 @@ const uploadFile = async (req, res) => {
 };
 
 const getListofFiles = async (req, res) => {
-    const { user_email, course_code, group_no, phase_no } = req.body;
+    const course_code = req.query.course_code;
+    const user_email = req.query.user_email;
 
     try {
         const subject = await Subject.findOne({ course_code });
@@ -64,38 +65,42 @@ const getListofFiles = async (req, res) => {
             return res.status(404).json({ error: "Subject not found" });
         }
 
-        const isFaculty = subject.faculty_handler_email === user_email;
+        const isFaculty = subject.faculty_incharge_email === user_email;
 
-        // Find the group by group number
-        const group = subject.groups.find(group => group.group_no === group_no);
+        const group = subject.groups.find(group =>
+            group.members.some(member => member.email === user_email)
+        );
+
         if (!group) {
-            return res.status(404).json({ error: "Group not found" });
+            return res.status(404).json({ error: "Group not found or user is not a member of any group" });
         }
 
-        const isStudentInGroup = group.students.some(student => student.email === user_email);
+        const isStudentInGroup = group.members.some(member => member.email === user_email);
 
         if (!isFaculty && !isStudentInGroup) {
             return res.status(403).json({ error: 'User not authorized to view files for this group' });
         }
 
-        const phase = group.phases.find(phase => phase.phase_no === phase_no);
-        if (!phase) {
-            return res.status(404).json({ error: "Phase not found" });
+        let allFilesInfo = [];
+        group.phases.forEach(phase => {
+            const filesInfo = phase.files.map(file => ({
+                original_name: file.original_name,
+                file_name: file.file_name,
+                uploadedAt: file.uploadedAt,
+                phase_no: phase.phase_no 
+            }));
+            allFilesInfo = allFilesInfo.concat(filesInfo);
+        });
+
+        if (allFilesInfo.length === 0) {
+            return res.status(404).json({ error: "No files found in any phase" });
         }
 
-        // Extract file information
-        const filesInfo = phase.files.map(file => ({
-            original_name: file.original_name, 
-            file_name: file.file_name,         
-            uploadedAt: file.uploadedAt        
-        }));
-
-        res.status(200).json(filesInfo);
+        res.status(200).json(allFilesInfo);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
-
 
 const getFile = async (req, res) => {
     try {
@@ -137,7 +142,7 @@ const getFile = async (req, res) => {
 };
 
 const deleteFile = async (req, res) => {
-    const { course_code, group_no, phase_no, file_name, user_email } = req.body;
+    const { course_code, group_no, file_name, user_email } = req.body;
 
     try {
         const subject = await Subject.findOne({ course_code });
@@ -150,40 +155,43 @@ const deleteFile = async (req, res) => {
             return res.status(404).json({ error: 'Group not found' });
         }
 
-        const userInGroup = group.students.some(student => student.email === user_email);
+        const userInGroup = group.members.some(member => member.email === user_email);
         if (!userInGroup) {
             return res.status(403).json({ error: 'User not authorized to delete files for this group' });
         }
 
-        const phase = group.phases.find(phase => phase.phase_no === phase_no);
-        if (!phase) {
-            return res.status(404).json({ error: 'Phase not found' });
-        }
+        // Search for the file in all phases
+        let fileFound = false;
+        for (const phase of group.phases) {
+            const fileIndex = phase.files.findIndex(file => file.file_name === file_name);
+            if (fileIndex !== -1) {
+                // Get the file path
+                const filePath = phase.files[fileIndex].file_path;
 
-        // Find the file within the phase
-        const fileIndex = phase.files.findIndex(file => file.file_name === file_name);
-        if (fileIndex === -1) {
-            return res.status(404).json({ error: 'File not found' });
-        }
+                // Remove the file from the phase's files array
+                phase.files.splice(fileIndex, 1);
 
-        // Get the file path
-        const filePath = phase.files[fileIndex].file_path;
+                // Save the updated subject
+                await subject.save();
 
-        // Remove the file from the phase's files array
-        phase.files.splice(fileIndex, 1);
+                // Delete the file from local storage
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting file:', err);
+                        return res.status(500).json({ error: 'Failed to delete file from server' });
+                    }
 
-        // Save the updated subject
-        await subject.save();
+                    res.status(200).json({ message: 'File deleted successfully' });
+                });
 
-        // Delete the file from local storage
-        fs.unlink(filePath, (err) => {
-            if (err) {
-                console.error('Error deleting file:', err);
-                return res.status(500).json({ error: 'Failed to delete file from server' });
+                fileFound = true;
+                break; // Exit loop once file is found and deleted
             }
+        }
 
-            res.status(200).json({ message: 'File deleted successfully' });
-        });
+        if (!fileFound) {
+            return res.status(404).json({ error: 'File not found in any phase' });
+        }
 
     } catch (error) {
         console.error('Error:', error);

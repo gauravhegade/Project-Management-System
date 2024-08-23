@@ -204,7 +204,7 @@ const FacultyDashboard = () => {
   // Function to fetch the list of subjects
   const fetchSubjects = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/subject/get-list-of-subjects', {
+      const response = await axios.get('http://localhost:3000/api/subject/get-list-of-subjects', {
         params: { faculty_incharge_email: user.email },
       });
       setSubjects(response.data);
@@ -231,7 +231,7 @@ const FacultyDashboard = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:5000/api/subject/create-subject', subjectData);
+      const response = await axios.post('http://localhost:3000/api/subject/create-subject', subjectData);
       alert('Subject created successfully');
       
       setSubjectData({

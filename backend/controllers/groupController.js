@@ -15,7 +15,7 @@ const getGroupCount = async (course_code) => {
 };
 
 const createGroup = async (req, res) => {
-  const { course_code, title, members, project_description } = req.body;
+  const { course_code, title, members, project_description, user_email } = req.body;
 
   if (!course_code) {
     console.log('Missing course_code');
@@ -29,7 +29,6 @@ const createGroup = async (req, res) => {
     console.log('Members is not an array or missing');
     return res.status(400).json({ error: 'Missing or invalid members' });
   }
-
   if (!members.every((member) => member.email && member.name && member.usn)) {
     console.log('Invalid member info', members);
     return res.status(400).json({ error: 'Invalid member info' });
@@ -44,11 +43,15 @@ const createGroup = async (req, res) => {
     }
 
     const studentEmails = subject.students.map(student => student.email);
-    const unauthorizedMembers = members.filter(member => !studentEmails.includes(member.email));
+    if (!studentEmails.includes(user_email)) {
+      console.log(`User ${user_email} is not authorized to create a group in this subject`);
+      return res.status(403).json({ error: 'You do not have access to create a group in this subject' });
+    }
 
+    const unauthorizedMembers = members.filter(member => !studentEmails.includes(member.email));
     if (unauthorizedMembers.length > 0) {
       console.log('Unauthorized members:', unauthorizedMembers);
-      return res.status(403).json({ error: 'You do not have access to create a group in this subject' });
+      return res.status(403).json({ error: 'One or more members do not have access to create a group in this subject' });
     }
 
     if (title.length < 3 || title.length > 80) {
@@ -66,7 +69,7 @@ const createGroup = async (req, res) => {
     const group_no = groupCount + 1;
 
     const group_info = {
-      group_no, 
+      group_no,
       title,
       members,
       project_description: project_description || ' ',
@@ -81,6 +84,8 @@ const createGroup = async (req, res) => {
     res.status(500).json({ error: 'Failed to create group' });
   }
 };
+
+module.exports = { createGroup };
 
 const addTeamMember = async (req, res) => {
   const { course_code, name, usn, email, user_email } = req.body;
