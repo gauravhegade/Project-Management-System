@@ -16,7 +16,10 @@ const Signup = () => {
     try {
       const userData = await signup({ email, password }, role);
       login(userData); // Log the user in after signup
-      navigate('/dashboard'); 
+      if(role ===  "student")
+        navigate('/student-dashboard');
+        else 
+        navigate('/faculty-dashboard'); 
     } catch (err) {
       setError(err.message); // Display error message
     }
