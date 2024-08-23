@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 mongoose
   // .connect(process.env.MONGO_URI, {}) // connect("mongodb://localhost:27017/DATA", {})
-  .connect('mongodb://127.0.0.1:27017/Data', {})
+  .connect('mongodb://127.0.0.1:27017/LOCALDB', {})
   .then(() => {
     app.listen(process.env.PORT, () => {
       console.log('Connected to MongoDB');

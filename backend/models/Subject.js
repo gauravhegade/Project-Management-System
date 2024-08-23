@@ -21,6 +21,7 @@ const memberSchema = new Schema({
 
 const fileSchema = new Schema(
   {
+    original_name: {type: String, required: true},
     file_name: { type: String, required: true },
     file_path: { type: String, required: true },
     uploadedAt: { type: Date, default: Date.now },
