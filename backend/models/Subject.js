@@ -5,7 +5,6 @@ const memberSchema = new Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
     match: /.+\@.+\..+/,
   },
   name: {
@@ -17,7 +16,6 @@ const memberSchema = new Schema({
   usn: {
     type: String,
     required: true,
-    unique: true,
   },
 });
 
@@ -44,7 +42,6 @@ const groupSchema = new Schema(
     group_no: {
       type: Number,
       required: true,
-      unique: true,
     },
     title: {
       type: String,

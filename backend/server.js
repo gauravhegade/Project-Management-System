@@ -21,8 +21,8 @@ app.use(morgan('dev')); // Middleware to log HTTP requests to the console
 app.use(express.urlencoded({ extended: true }));
 
 mongoose
-  // .connect(process.env.MONGO_URI, {}) // connect("mongodb://localhost:27017/LOCALDB", {})
-  .connect('mongodb://127.0.0.1:27017/login_data', {})
+  // .connect(process.env.MONGO_URI, {}) // connect("mongodb://localhost:27017/DATA", {})
+  .connect('mongodb://127.0.0.1:27017/Data', {})
   .then(() => {
     app.listen(process.env.PORT, () => {
       console.log('Connected to MongoDB');
